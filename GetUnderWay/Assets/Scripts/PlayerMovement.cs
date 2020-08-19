@@ -23,12 +23,19 @@ public class PlayerMovement : MonoBehaviour
 
     [Header("JumpAttribute")]
     public float jumpForce;
+    public float delayTimeFall;
     public bool isJumping;
     public bool isGround;
     public float jumpTimeLimit;
     public float jumpTimeCount;
     public Transform feetPosition;
     public float checkFeetRadius;
+
+    [Header("SomersaultbAttribute")]
+    public bool isSomersault;
+    public float somersaultForce;
+    public bool canSomersault;
+    public bool stackSault;
 
     [Header("FallAttribute")]
     public float fallMultiphlier = 2.5f;
@@ -40,9 +47,12 @@ public class PlayerMovement : MonoBehaviour
     public bool isLeftWall;
     public bool isRightWall;
     public int lastCheckWall;
-    public float slideForce;
+    public float friction;
     public Transform leftHand;
     public Transform rightHand;
+
+    [Header("WallGrabAttribute")]
+    public bool isWallGrab;
 
     [Header("CrouchAttribute")]
     public bool canStand;
@@ -69,8 +79,14 @@ public class PlayerMovement : MonoBehaviour
     {
         Flip();
         Jump();
+        
         WallJump();
+
+        Somersault();
+
         WallSlide();
+        WallGrab1();
+        //WallGrab();
         Run();
 
         Crouch();
@@ -85,14 +101,18 @@ public class PlayerMovement : MonoBehaviour
 
     public void Flip()
     {
-        if (Input.GetAxisRaw("Horizontal") > 0)
+        if (!isWallGrab)
         {
-            GetComponent<SpriteRenderer>().flipX = false;
+            if (Input.GetAxisRaw("Horizontal") > 0)
+            {
+                GetComponent<SpriteRenderer>().flipX = false;
+            }
+            else if (Input.GetAxisRaw("Horizontal") < 0)
+            {
+                GetComponent<SpriteRenderer>().flipX = true;
+            }
         }
-        else if (Input.GetAxisRaw("Horizontal") < 0)
-        {
-            GetComponent<SpriteRenderer>().flipX = true;
-        }
+
     }
     public void Jump()
     {
@@ -101,13 +121,20 @@ public class PlayerMovement : MonoBehaviour
         ani.SetBool("isGround", isGround);
         if (isGround)
         {
+            canSomersault = false;
+            stackSault = true;
+            ani.SetBool("isSomersault", false);
+
             ani.SetBool("fall", false);
+            rb.gravityScale = gravity;
         }
         if (isGround && Input.GetKeyDown(KeyCode.J))
         {
             rb.velocity = Vector2.up * jumpForce;
             //rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Force);
             isJumping = true;
+
+
             jumpTimeCount = jumpTimeLimit;
 
             //ani
@@ -124,24 +151,47 @@ public class PlayerMovement : MonoBehaviour
             else
             {
                 isJumping = false;
+                //canSomersault = true;//khi đứng sát tường nhảy sẽ là nhảy x2
+                if (!isWall)
+                {
+                    canSomersault = true;//khi đứng sát tường thì nhảy sẽ là nhảy bật tường
+                }
                 //ani
                 ani.SetBool("fall", true);
+                //StartCoroutine(WaitFall());
             }
         }
         if (Input.GetKeyUp(KeyCode.J))
         {
             isJumping = false;
+            //canSomersault = true;//khi đứng sát tường nhảy sẽ là nhảy x2
+            if (!isWall)
+            {
+                canSomersault = true;//khi đứng sát tường thì nhảy sẽ là nhảy bật tường
+            }
             //ani
             ani.SetBool("fall", true);
+            //StartCoroutine(WaitFall());
         }
         // fix gravity
-        if (rb.velocity.y < 0 && !isWallJump)
+        if (rb.velocity.y < 0 && !isWallJump && !isWallGrab && !isWall)
         {
             rb.velocity += Vector2.up * Physics2D.gravity.y * (fallMultiphlier - 1) * Time.deltaTime;
         }
-        else if (rb.velocity.y > 0 && !Input.GetKey(KeyCode.J) && !isWallJump)
+        else if (rb.velocity.y > 0 && !Input.GetKey(KeyCode.J) && !isWallJump && !isWallGrab && !isWall)
         {
             rb.velocity += Vector2.up * Physics2D.gravity.y * (lowMultiphlier - 1) * Time.deltaTime;
+        }
+    }
+    public void Somersault()
+    {
+        if (stackSault && canSomersault && Input.GetKeyDown(KeyCode.J))
+        {
+            stackSault = false;
+            rb.velocity = Vector2.up * somersaultForce;
+
+            //ani
+            ani.SetBool("isSomersault", true);
         }
     }
     public void Run()
@@ -151,14 +201,17 @@ public class PlayerMovement : MonoBehaviour
         {
             fixInput = 0;
         }
-        if (!isWallJump)
+        if (!isWallJump && !isWallGrab)
         {
             direction = new Vector2(fixInput * movementSpeed, rb.velocity.y);
             rb.velocity = direction;
             //ani
             ani.SetBool("isRunning", fixInput != 0);
         }
-
+        if (!isGround && !isWall)
+        {
+            canSomersault = true;
+        }
 
     }
     public void WallSlide()// xem lai 
@@ -166,17 +219,71 @@ public class PlayerMovement : MonoBehaviour
         isLeftWall = Physics2D.OverlapBox(leftHand.position, new Vector2(0.1f, 0.5f),0 , whatIsWall); // nen xem lai cach su dung
         isRightWall = Physics2D.OverlapBox(rightHand.position, new Vector2(0.1f, 0.5f), 0, whatIsWall);
         isWall = isLeftWall || isRightWall;
+        if (isWall && rb.velocity.y < 0)
+        {
+            rb.gravityScale = friction;
+            canSomersault = false;
+            stackSault = true;
+            ani.SetBool("isSomersault", false);
+        }
+        else if (!isWallGrab && isWall)
+        {
+            rb.gravityScale = gravity;
+        }
+
+
 
         if (isRightWall)
         {
             lastCheckWall = 1;
+            GetComponent<SpriteRenderer>().flipX = false;
         }
         else if (isLeftWall)
         {
             lastCheckWall = -1;
+            GetComponent<SpriteRenderer>().flipX = true;
         }
         //ani
         ani.SetBool("isWall", isWall);
+        ani.SetFloat("velocityY", rb.velocity.y);
+    }
+    public void WallGrab()
+    {
+        if (isWall && !isWallJump && Input.GetKey(KeyCode.K))
+        {
+            isWallGrab = true;
+            rb.gravityScale = 0;
+            rb.velocity = Vector2.zero;
+            //ani
+            ani.SetBool("isWallGrab", true);
+        }
+        if (isWallGrab && Input.GetKeyUp(KeyCode.K))
+        {
+            isWallGrab = false;
+            rb.gravityScale = gravity;
+
+            //ani
+            ani.SetBool("isWallGrab", false);
+        }
+    }
+    public void WallGrab1()
+    {
+        if (isWall && !isWallJump && Input.GetKeyDown(KeyCode.K))
+        {
+            isWallGrab = true;
+            rb.gravityScale = 0;
+            rb.velocity = Vector2.zero;
+            //ani
+            ani.SetBool("isWallGrab", true);
+        }
+        if (isWallGrab && Input.GetKeyUp(KeyCode.K))
+        {
+            isWallGrab = false;
+            rb.gravityScale = gravity;
+
+            //ani
+            ani.SetBool("isWallGrab", false);
+        }
     }
     public void Crouch()
     {
@@ -224,7 +331,16 @@ public class PlayerMovement : MonoBehaviour
         canWallJump = !isGround && isWall;
         if (canWallJump && Input.GetKeyDown(KeyCode.J))
         {
+            
             isWallJump = true;
+
+
+            isWallGrab = false;
+            rb.gravityScale = gravity;
+
+            //ani
+            ani.SetBool("isWallGrab", false);
+
             Vector2 fixDirection = new Vector2(wallJumpDirection.x * (isLeftWall ? 1 : -1), wallJumpDirection.y);
             rb.velocity = fixDirection * wallJumpForce ;
             //ani
@@ -247,6 +363,7 @@ public class PlayerMovement : MonoBehaviour
     {
         yield return new WaitForSeconds(delayTimeWallJump);
         isWallJump = false;
+        canSomersault = true;
         //ani
         ani.SetBool("isWallJump", false);
     }

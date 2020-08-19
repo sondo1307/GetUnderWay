@@ -388,22 +388,28 @@ MonoBehaviour:
   canSpecialJump: 0
   direction: {x: 0, y: 0}
   jumpForce: 8
+  delayTimeFall: 0.3
   isJumping: 0
   isGround: 0
   jumpTimeLimit: 0.3
   jumpTimeCount: 0
   feetPosition: {fileID: 146691743}
   checkFeetRadius: 0.2
+  isSomersault: 0
+  somersaultForce: 10
+  canSomersault: 0
+  stackSault: 0
   fallMultiphlier: 2.5
   lowMultiphlier: 2
-  gravity: 1
+  gravity: 2
   isWall: 0
   isLeftWall: 0
   isRightWall: 0
   lastCheckWall: 0
-  slideForce: 0
+  friction: 1
   leftHand: {fileID: 164370694}
   rightHand: {fileID: 1511763441}
+  isWallGrab: 0
   canStand: 0
   isCrouch: 0
   crouchMovementSpeed: 2
@@ -411,7 +417,7 @@ MonoBehaviour:
   checkHeadRadius: 0.1
   canWallJump: 0
   isWallJump: 0
-  wallJumpForce: 5
+  wallJumpForce: 4
   wallJumpDirection: {x: 1, y: 2}
   delayTimeWallJump: 0.2
 --- !u!1 &146691742
