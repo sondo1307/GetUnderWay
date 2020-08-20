@@ -85,7 +85,7 @@ public class PlayerMovement : MonoBehaviour
         Somersault();
 
         WallSlide();
-        //WallGrab1();
+        WallGrab1();
         //WallGrab();
         Run();
 
