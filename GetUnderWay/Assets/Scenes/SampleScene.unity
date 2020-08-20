@@ -406,7 +406,7 @@ MonoBehaviour:
   isLeftWall: 0
   isRightWall: 0
   lastCheckWall: 0
-  friction: 1
+  friction: 2
   leftHand: {fileID: 164370694}
   rightHand: {fileID: 1511763441}
   isWallGrab: 0
